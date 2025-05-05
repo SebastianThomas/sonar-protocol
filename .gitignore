@@ -1,0 +1,8 @@
+**/*.DS_STORE
+*.DS_STORE
+**/target
+
+**/*.env
+
+**/test/**/*.aux.xml
+

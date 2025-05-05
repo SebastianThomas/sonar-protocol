@@ -1,0 +1,83 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+    name: sonar-protocol-ws-dev
+    namespace: sonar-protocol-dev
+spec:
+    replicas: 1
+    selector:
+        matchLabels:
+            app: sonar-protocol-ws-dev
+    strategy:
+        rollingUpdate:
+            maxSurge: 1
+            maxUnavailable: 0
+    template:
+        metadata:
+            labels:
+                app: sonar-protocol-ws-dev
+                egress: cilium
+            annotations:
+                prometheus.io/scrape: "true"
+                prometheus.io/path: "/actuator/prometheus"
+                prometheus.io/port: "8085"
+        spec:
+            nodeSelector:
+                "kubernetes.io/os": linux
+            containers:
+                -   name: sonar-protocol-ws
+                    image: hub.docker.com/sthomasch/sonar-protocol-ws:PLACEHOLDER
+                    imagePullPolicy: Always
+                    env:
+                        -   name: ADDITIONAL_JAVA_OPTS
+                            value: "-Djts.overlay=ng -Djts.relate=ng -XX:MaxRAMPercentage=70.0"
+                        -   name: SPRING_CONFIG_NAME
+                            value: sonar-protocol-ws-dev
+                        -   name: LOGGING_CONFIG
+                            value: /config/sonar-protocol-ws-dev-logback.xml
+                        -   name: SPRING_CONFIG_LOCATION
+                            value: /config/
+                    envFrom:
+                        -   secretRef:
+                                name: sonar-protocol-ws-db-rw-dev
+                        -   secretRef:
+                                name: sonar-protocol-aws-s3-dev
+                    ports:
+                        -   containerPort: 8080
+                    readinessProbe:
+                        httpGet:
+                            path: "/actuator/health/readiness"
+                            port: 8085
+                        failureThreshold: 2
+                    livenessProbe:
+                        httpGet:
+                            path: "/actuator/health/liveness"
+                            port: 8085
+                        failureThreshold: 2
+                    startupProbe:
+                        httpGet:
+                            path: "/actuator/health"
+                            port: 8085
+                        failureThreshold: 10
+                        initialDelaySeconds: 10
+                        periodSeconds: 10
+                    resources:
+                        requests:
+                            cpu: 100m
+                            memory: 1G
+                        limits:
+                            memory: 1G
+                    volumeMounts:
+                        -   name: config-volume
+                            mountPath: /config/
+                            readOnly: true
+
+            volumes:
+                -   name: config-volume
+                    configMap:
+                        name: sonar-protocol-ws-dev-config
+                        items:
+                            -   key: sonar-protocol-ws-dev.properties
+                                path: sonar-protocol-ws-dev.properties
+                            -   key: sonar-protocol-ws-dev-logback.xml
+                                path: sonar-protocol-ws-dev-logback.xml

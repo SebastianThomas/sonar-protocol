@@ -1,0 +1,12 @@
+---
+apiVersion: v1
+kind: Service
+metadata:
+    name: sonar-protocol-ws-dev
+    namespace: sonar-protocol-dev
+spec:
+    type: ClusterIP
+    ports:
+        -   port: 8080
+    selector:
+        app: sonar-protocol-ws-dev

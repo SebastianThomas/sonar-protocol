@@ -1,0 +1,40 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+    name: sonar-protocol-ws-dev-ingress-rule
+    namespace: ingress-internal
+    annotations:
+        kubernetes.io/ingress.class: nginx
+        cert-manager.io/cluster-issuer: letsencrypt-prod
+        nginx.ingress.kubernetes.io/proxy-body-size: 30m
+spec:
+    tls:
+        -   hosts:
+                - ws-dev.sthomas.ch
+            secretName: tls-secret-sonar-protocol-dev-ws
+    rules:
+        -   host: ws-dev.sthomas.ch
+            http:
+                paths:
+                    -   backend:
+                            service:
+                                name: sonar-protocol-ws-dev
+                                port:
+                                    number: 8080
+                        path: /
+                        pathType: Prefix
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+    name: sonar-protocol-ws-dev
+    namespace: ingress-internal
+spec:
+    type: ExternalName
+    externalName: sonar-protocol-ws-dev.sonar-protocol-dev.svc.cluster.local
+    ports:
+        -   port: 8080
+            targetPort: 8080
+            protocol: TCP
+            name: http8080
