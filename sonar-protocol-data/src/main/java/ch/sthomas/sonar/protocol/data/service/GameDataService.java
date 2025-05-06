@@ -6,6 +6,7 @@ import ch.sthomas.sonar.protocol.data.repository.PlayerRepository;
 import ch.sthomas.sonar.protocol.model.*;
 import ch.sthomas.sonar.protocol.model.exception.*;
 import ch.sthomas.sonar.protocol.model.play.Direction;
+import ch.sthomas.sonar.protocol.model.play.Location;
 import ch.sthomas.sonar.protocol.model.util.VectorUtils;
 
 import com.google.common.collect.MoreCollectors;
@@ -84,17 +85,15 @@ public class GameDataService {
     }
 
     public Path move(final long gameId, final Team.ID teamId, final Direction direction)
-            throws GameNotFoundException,
-                    NotSubmergedException,
-                    IllegalGameStateException,
-                    GameNotStartedException {
+            throws GameNotFoundException, GameException {
         final var lastPath = getLastPathEntity(gameId, teamId);
-        final var lastPoint = getLastPoint(lastPath);
+        final var lastLocation = getLastLocation(lastPath);
+        final var newLocation = VectorUtils.add(lastLocation, direction.vector());
+        if (isOnPath(lastPath, newLocation)) {
+            throw new CannotCrossOwnPathException(newLocation);
+        }
         pathNodeEntityRepository.save(
-                new PathNodeEntity(
-                        lastPath.getId(),
-                        VectorUtils.add(lastPoint, direction.vector()),
-                        Instant.now()));
+                new PathNodeEntity(lastPath.getId(), newLocation, Instant.now()));
         return pathEntityRepository.findById(lastPath.getId()).orElseThrow().toRecord();
     }
 
@@ -120,7 +119,7 @@ public class GameDataService {
                 .save(
                         new PathEntity(
                                 lastPath.getShip(),
-                                new PathNodeEntity(getLastPoint(lastPath), Instant.now())))
+                                new PathNodeEntity(getLastLocation(lastPath), Instant.now())))
                 .toRecord();
     }
 
@@ -131,14 +130,12 @@ public class GameDataService {
                 new PathEntity(
                         gameAndTeam.getRight().getShip(),
                         new PathNodeEntity(location, Instant.now()));
+        pathEntityRepository.deleteByShip(gameAndTeam.getRight().getShip());
         return pathEntityRepository.save(newPath).toRecord();
     }
 
     private PathEntity getLastPathEntity(final long gameId, final Team.ID teamId)
-            throws GameNotFoundException,
-                    NotSubmergedException,
-                    IllegalGameStateException,
-                    GameNotStartedException {
+            throws GameNotFoundException, GameException {
         final var gameAndTeam = findGameAndTeam(gameId, teamId);
         if (gameAndTeam.getLeft().getState() == GameState.CREATED) {
             throw new GameNotStartedException();
@@ -154,8 +151,14 @@ public class GameDataService {
         return lastPath;
     }
 
-    private Location getLastPoint(final PathEntity path) {
-        return path.getNodes().getLast().getPoint();
+    private Location getLastLocation(final PathEntity path) {
+        return path.getNodes().getLast().getLocation();
+    }
+
+    private boolean isOnPath(final PathEntity lastPath, final Location newLocation) {
+        return lastPath.getNodes().stream()
+                .map(PathNodeEntity::getLocation)
+                .anyMatch(newLocation::equals);
     }
 
     public Pair<GameEntity, TeamEntity> findGameAndTeam(final long gameId, final Team.ID teamId)
