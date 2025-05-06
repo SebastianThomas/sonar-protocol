@@ -1,0 +1,2 @@
+### Get Game
+GET {{baseurl}}/v1/game?gameId=1

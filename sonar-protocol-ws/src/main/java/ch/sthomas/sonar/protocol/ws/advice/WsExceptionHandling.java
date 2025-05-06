@@ -5,4 +5,4 @@ import org.zalando.problem.spring.web.advice.ProblemHandling;
 import org.zalando.problem.spring.web.advice.security.SecurityAdviceTrait;
 
 @ControllerAdvice
-public class WsExceptionHandling implements ProblemHandling, SecurityAdviceTrait {}
+public class WsExceptionHandling implements ProblemHandling, SecurityAdviceTrait, GameExceptionHandling {}

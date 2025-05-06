@@ -1,0 +1,14 @@
+services:
+  shared-db:
+    image: postgres:17
+    platform: linux/amd64
+    environment:
+      POSTGRES_PASSWORD: sonar-protocol
+      POSTGRES_USER: sonar-protocol
+      POSTGRES_DB: sonar-protocol
+    ports:
+      - "5401:5432"
+    volumes:
+      - sonar_protocol_db:/var/lib/postgresql/data
+volumes:
+  sonar_protocol_db:
