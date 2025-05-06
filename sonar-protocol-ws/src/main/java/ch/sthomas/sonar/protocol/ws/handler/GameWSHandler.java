@@ -38,6 +38,12 @@ public class GameWSHandler extends TextWebSocketHandler {
         this.playerToSessionId = new ConcurrentHashMap<>();
     }
 
+    /**
+     * Message format: {@code [EVENT]PAYLOAD} where EVENT is one of the cases below and PAYLOAD is
+     * either a JSON-Object with the schema from the models `ch.sthomas.sonar.protocol.model.api` or
+     * a number, depending on the class that is the second parameter in the {@link
+     * ObjectMapper#readValue(String, Class)}-call.
+     */
     @Override
     protected void handleTextMessage(
             @NotNull final WebSocketSession session, final TextMessage message)
