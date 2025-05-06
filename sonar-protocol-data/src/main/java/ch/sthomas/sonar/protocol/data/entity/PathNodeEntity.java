@@ -1,11 +1,10 @@
 package ch.sthomas.sonar.protocol.data.entity;
 
-import ch.sthomas.sonar.protocol.model.Location;
 import ch.sthomas.sonar.protocol.model.PathNode;
+import ch.sthomas.sonar.protocol.model.play.Location;
 
 import jakarta.persistence.*;
 
-import java.awt.geom.Location;
 import java.time.Instant;
 
 @Entity
@@ -44,10 +43,10 @@ public class PathNodeEntity {
     }
 
     public PathNode toRecord() {
-        return new PathNode(id, getPoint(), time);
+        return new PathNode(id, getLocation(), time);
     }
 
-    public Location getPoint() {
+    public Location getLocation() {
         return new Location(x, y);
     }
 }

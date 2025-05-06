@@ -1,6 +1,6 @@
 package ch.sthomas.sonar.protocol.ws.controller;
 
-import ch.sthomas.sonar.protocol.model.Location;
+import ch.sthomas.sonar.protocol.model.play.Location;
 import ch.sthomas.sonar.protocol.model.Path;
 import ch.sthomas.sonar.protocol.model.Team;
 import ch.sthomas.sonar.protocol.model.exception.GameException;

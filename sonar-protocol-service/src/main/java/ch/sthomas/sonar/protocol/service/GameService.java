@@ -5,6 +5,7 @@ import ch.sthomas.sonar.protocol.model.*;
 import ch.sthomas.sonar.protocol.model.exception.*;
 import ch.sthomas.sonar.protocol.model.play.Direction;
 
+import ch.sthomas.sonar.protocol.model.play.Location;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
