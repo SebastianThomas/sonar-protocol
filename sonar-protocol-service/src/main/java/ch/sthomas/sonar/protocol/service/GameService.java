@@ -2,13 +2,15 @@ package ch.sthomas.sonar.protocol.service;
 
 import ch.sthomas.sonar.protocol.data.service.GameDataService;
 import ch.sthomas.sonar.protocol.model.*;
+import ch.sthomas.sonar.protocol.model.api.*;
 import ch.sthomas.sonar.protocol.model.exception.*;
-import ch.sthomas.sonar.protocol.model.play.Direction;
 
-import ch.sthomas.sonar.protocol.model.play.Location;
+import jakarta.annotation.Nullable;
+
 import org.springframework.stereotype.Service;
 
 import java.util.List;
+import java.util.Optional;
 
 @Service
 public class GameService {
@@ -22,8 +24,8 @@ public class GameService {
         return gameDataService.findGameById(gameId).orElseThrow(GameNotFoundException::new);
     }
 
-    public Player createPlayer(final String name, final PlayerRole role) {
-        return gameDataService.createPlayer(name, role);
+    public Player createPlayer(final PlayerPayload payload, @Nullable final String wsSessionId) {
+        return gameDataService.createPlayer(payload.name(), payload.role(), wsSessionId);
     }
 
     public Game createGame(final long gameMasterId) throws PlayerNotFoundException {
@@ -34,8 +36,11 @@ public class GameService {
         return gameDataService.createGame(List.of(gameMaster), List.of());
     }
 
-    public Game joinGame(final long playerId, final long gameId, final Team.ID team)
+    public Game joinGame(final JoinGamePayload payload)
             throws GameNotFoundException, PlayerNotFoundException {
+        final var playerId = payload.playerId();
+        final var gameId = payload.gameId();
+        final var team = payload.team();
         return gameDataService.joinGame(
                 gameDataService.findPlayerById(playerId).orElseThrow(PlayerNotFoundException::new),
                 gameId,
@@ -46,24 +51,23 @@ public class GameService {
         return gameDataService.startGame(gameId);
     }
 
-    public Path move(final long gameId, final Team.ID teamId, final Direction direction)
-            throws GameNotFoundException, GameException {
-        return gameDataService.move(gameId, teamId, direction);
+    public Path move(final MovePayload payload) throws GameNotFoundException, GameException {
+        return gameDataService.move(payload.gameId(), payload.teamId(), payload.direction());
     }
 
-    public Path surface(final long gameId, final Team.ID team)
+    public Path surface(final GameIdTeamPayload payload)
             throws GameException, GameNotFoundException {
-        return gameDataService.surface(gameId, team);
+        return gameDataService.surface(payload.gameId(), payload.team());
     }
 
-    public Path submerge(final long gameId, final Team.ID team)
+    public Path submerge(final GameIdTeamPayload payload)
             throws GameException, GameNotFoundException {
-        return gameDataService.submerge(gameId, team);
+        return gameDataService.submerge(payload.gameId(), payload.team());
     }
 
-    public Path setStartPosition(final long gameId, final Team.ID team, final Location location)
-            throws GameNotFoundException {
-        return gameDataService.setStartPosition(gameId, team, location);
+    public Path setStartPosition(final SetLocationPayload payload) throws GameNotFoundException {
+        return gameDataService.setStartPosition(
+                payload.gameId(), payload.team(), payload.location());
     }
 
     protected Game findGameById(final long gameId) throws GameNotFoundException {
@@ -75,5 +79,17 @@ public class GameService {
             case A -> game.a();
             case B -> game.b();
         };
+    }
+
+    public Optional<Player> findPlayer(final long playerId) {
+        return gameDataService.findPlayerById(playerId);
+    }
+
+    public Optional<Player> updatePlayerWsSessionId(final long playerId, final String wsSessionId) {
+        return gameDataService.updatePlayerWsSessionId(playerId, wsSessionId);
+    }
+
+    public Optional<Game> findGameWithPlayer(final Player player) {
+        return gameDataService.findGameWithPlayerId(player.id());
     }
 }

@@ -19,10 +19,11 @@ CREATE TABLE t_games
 
 CREATE TABLE t_players
 (
-    pk_player_id INTEGER GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
-    fk_team_id   INTEGER REFERENCES t_teams (pk_team_id),
-    name         TEXT NOT NULL,
-    role         TEXT NOT NULL
+    pk_player_id  INTEGER GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    fk_team_id    INTEGER REFERENCES t_teams (pk_team_id),
+    name          TEXT NOT NULL,
+    role          TEXT NOT NULL,
+    ws_session_id TEXT NOT NULL
 );
 
 CREATE TABLE t_paths

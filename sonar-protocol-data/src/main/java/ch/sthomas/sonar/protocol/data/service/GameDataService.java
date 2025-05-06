@@ -12,6 +12,8 @@ import ch.sthomas.sonar.protocol.model.util.VectorUtils;
 import com.google.common.collect.MoreCollectors;
 import com.nimbusds.jose.util.Pair;
 
+import jakarta.annotation.Nullable;
+
 import org.springframework.stereotype.Service;
 
 import java.time.Instant;
@@ -67,8 +69,9 @@ public class GameDataService {
         return new ShipEntity();
     }
 
-    public Player createPlayer(final String name, final PlayerRole role) {
-        final var player = new PlayerEntity(name, role);
+    public Player createPlayer(
+            final String name, final PlayerRole role, @Nullable final String wsSessionId) {
+        final var player = new PlayerEntity(name, role, wsSessionId);
         return playerRepository.save(player).toRecord();
     }
 
@@ -98,10 +101,7 @@ public class GameDataService {
     }
 
     public Path surface(final long gameId, final Team.ID team)
-            throws IllegalGameStateException,
-                    NotSubmergedException,
-                    GameNotFoundException,
-                    GameNotStartedException {
+            throws GameException, GameNotFoundException {
         final var lastPath = getLastPathEntity(gameId, team);
         if (lastPath.surfaced()) {
             throw new NotSubmergedException();
@@ -196,5 +196,14 @@ public class GameDataService {
     private boolean pathsNotEmpty(final TeamEntity team) {
         return !team.getShip().getPaths().isEmpty()
                 && !team.getShip().getPaths().getFirst().getNodes().isEmpty();
+    }
+
+    public Optional<Game> findGameWithPlayerId(final long playerId) {
+        return gameRepository.findByPlayer(playerId).map(GameEntity::toRecord);
+    }
+
+    public Optional<Player> updatePlayerWsSessionId(final long playerId, final String wsSessionId) {
+        playerRepository.updatePlayerWsSessionId(playerId, wsSessionId);
+        return playerRepository.findById(playerId).map(PlayerEntity::toRecord);
     }
 }

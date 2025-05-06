@@ -7,3 +7,4 @@
 **/test/**/*.aux.xml
 
 .idea
+node_modules

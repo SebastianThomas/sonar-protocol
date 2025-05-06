@@ -23,23 +23,27 @@ public class PlayerEntity {
     @Enumerated(EnumType.STRING)
     private PlayerRole role;
 
+    @Column(name = "ws_session_id")
+    private String wsSessionId;
+
     public long id() {
         return id;
     }
 
     public PlayerEntity() {}
 
-    public PlayerEntity(final String name, final PlayerRole role) {
+    public PlayerEntity(final String name, final PlayerRole role, final String wsSessionId) {
         this.name = name;
         this.role = role;
+        this.wsSessionId = wsSessionId;
     }
 
     public Player toRecord() {
-        return new Player(id, name, role);
+        return new Player(id, name, role, wsSessionId);
     }
 
     public static PlayerEntity fromRecord(final Player player) {
-        final var p = new PlayerEntity(player.name(), player.role());
+        final var p = new PlayerEntity(player.name(), player.role(), player.wsSessionId());
         p.id = player.id();
         return p;
     }
