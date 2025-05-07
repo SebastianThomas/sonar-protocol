@@ -26,22 +26,21 @@ import org.springframework.web.socket.handler.TextWebSocketHandler;
 import java.io.IOException;
 import java.util.Collection;
 import java.util.Objects;
-import java.util.concurrent.ConcurrentHashMap;
 
 @Component
 public class GameWSHandler extends TextWebSocketHandler {
     private static final Logger logger = LoggerFactory.getLogger(GameWSHandler.class);
     private final ObjectMapper objectMapper;
     private final GameService gameService;
+    private final WSSessionStore sessionStore;
 
-    private final ConcurrentHashMap<String, WebSocketSession> sessions;
-    private final ConcurrentHashMap<Long, String> playerToSessionId;
-
-    public GameWSHandler(final ObjectMapper objectMapper, final GameService gameService) {
+    public GameWSHandler(
+            final ObjectMapper objectMapper,
+            final GameService gameService,
+            final WSSessionStore sessionStore) {
         this.objectMapper = objectMapper;
         this.gameService = gameService;
-        this.sessions = new ConcurrentHashMap<>();
-        this.playerToSessionId = new ConcurrentHashMap<>();
+        this.sessionStore = sessionStore;
     }
 
     /**
@@ -67,12 +66,12 @@ public class GameWSHandler extends TextWebSocketHandler {
                                 gameService.createPlayer(
                                         objectMapper.readValue(content, PlayerPayload.class),
                                         session.getId());
-                        playerToSessionId.put(player.id(), session.getId());
+                        sessionStore.playerToSessionId().put(player.id(), session.getId());
                         yield player;
                     }
                     case REJOIN_GAME -> {
                         final var playerId = objectMapper.readValue(content, Long.class);
-                        playerToSessionId.put(playerId, session.getId());
+                        sessionStore.playerToSessionId().put(playerId, session.getId());
                         final var player =
                                 gameService
                                         .updatePlayerWsSessionId(playerId, session.getId())
@@ -101,34 +100,14 @@ public class GameWSHandler extends TextWebSocketHandler {
 
     @Override
     public void afterConnectionEstablished(final WebSocketSession session) throws Exception {
-        sessions.put(session.getId(), session);
+        sessionStore.sessions().put(session.getId(), session);
         super.afterConnectionEstablished(session);
     }
 
     @Override
     public void afterConnectionClosed(final WebSocketSession session, final CloseStatus status)
             throws Exception {
-        sessions.remove(session.getId());
+        sessionStore.sessions().remove(session.getId());
         super.afterConnectionClosed(session, status);
-    }
-
-    public Collection<WebSocketSession> getSessions(final Collection<Player> players) {
-        return players.stream()
-                .map(Player::id)
-                .map(playerToSessionId::get)
-                .filter(Objects::nonNull)
-                .map(sessions::get)
-                .filter(Objects::nonNull)
-                .toList();
-    }
-
-    public <T> void sendMessage(final WebSocketSession session, final GameEventMessage<T> event) {
-        try {
-            session.sendMessage(new TextMessage(objectMapper.writeValueAsString(event)));
-        } catch (final JsonProcessingException e) {
-            logger.error("Error while sending event", e);
-        } catch (final IOException e) {
-            logger.error("Error while sending event to the server", e);
-        }
     }
 }
