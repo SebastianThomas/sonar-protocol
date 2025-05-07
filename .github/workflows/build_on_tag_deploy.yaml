@@ -71,7 +71,7 @@ jobs:
       - name: Build and push docker image
         run: |
           mvn --batch-mode package jib:build \
-          -f sonar-protocol-backend/sonar-protocol-ws/pom.xml \
+          -f sonar-protocol-ws/pom.xml \
           -Dconfig.deploy.env=dev -Dconfig.directory=/config \
           -Dimage=${{ secrets.docker_hub_username }}/sonar-protocol-ws:${{ env.VERSION }} \
           -Djib.from.image=${{ env.DOCKER_IMAGE }} \
