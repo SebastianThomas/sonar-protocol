@@ -1,12 +1,17 @@
 package ch.sthomas.sonar.protocol.ws.handler;
 
+import ch.sthomas.sonar.protocol.model.Player;
 import ch.sthomas.sonar.protocol.model.api.*;
+import ch.sthomas.sonar.protocol.model.event.GameEvent;
+import ch.sthomas.sonar.protocol.model.event.GameEventMessage;
+import ch.sthomas.sonar.protocol.model.event.WebSocketGameEventListener;
 import ch.sthomas.sonar.protocol.model.exception.GameException;
 import ch.sthomas.sonar.protocol.model.exception.GameNotFoundException;
 import ch.sthomas.sonar.protocol.model.exception.NoSuchEventException;
 import ch.sthomas.sonar.protocol.model.exception.PlayerNotFoundException;
 import ch.sthomas.sonar.protocol.service.GameService;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import jakarta.validation.constraints.NotNull;
@@ -20,10 +25,13 @@ import org.springframework.web.socket.WebSocketSession;
 import org.springframework.web.socket.handler.TextWebSocketHandler;
 
 import java.io.IOException;
+import java.util.Collection;
+import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 
 @Component
-public class GameWSHandler extends TextWebSocketHandler {
+public class GameWSHandler extends TextWebSocketHandler
+        implements WebSocketGameEventListener<WebSocketSession> {
     private static final Logger logger = LoggerFactory.getLogger(GameWSHandler.class);
     private final ObjectMapper objectMapper;
     private final GameService gameService;
@@ -52,11 +60,11 @@ public class GameWSHandler extends TextWebSocketHandler {
         if (payload.indexOf('[') != 0 || payload.indexOf(']') == -1) {
             throw new NoSuchEventException("");
         }
-        final var topic = payload.substring(1, payload.indexOf(']'));
+        final var topic = GameEvent.fromString(payload.substring(1, payload.indexOf(']')));
         final var content = payload.substring(payload.indexOf(']') + 2);
         final var result =
                 switch (topic) {
-                    case "create_player" -> {
+                    case CREATE_PLAYER -> {
                         final var player =
                                 gameService.createPlayer(
                                         objectMapper.readValue(content, PlayerPayload.class),
@@ -64,7 +72,7 @@ public class GameWSHandler extends TextWebSocketHandler {
                         playerToSessionId.put(player.id(), session.getId());
                         yield player;
                     }
-                    case "rejoin_player" -> {
+                    case REJOIN_GAME -> {
                         final var playerId = objectMapper.readValue(content, Long.class);
                         playerToSessionId.put(playerId, session.getId());
                         final var player =
@@ -73,23 +81,22 @@ public class GameWSHandler extends TextWebSocketHandler {
                                         .orElseThrow(PlayerNotFoundException::new);
                         yield gameService.findGameWithPlayer(player);
                     }
-                    case "join" ->
+                    case JOIN ->
                             gameService.joinGame(
                                     objectMapper.readValue(content, JoinGamePayload.class));
-                    case "set_start_position" ->
+                    case SET_START_POSITION ->
                             gameService.setStartPosition(
                                     objectMapper.readValue(content, SetLocationPayload.class));
-                    case "start" ->
+                    case START ->
                             gameService.startGame(objectMapper.readValue(content, Long.class));
-                    case "move" ->
+                    case MOVE ->
                             gameService.move(objectMapper.readValue(content, MovePayload.class));
-                    case "surface" ->
+                    case SURFACE ->
                             gameService.surface(
                                     objectMapper.readValue(content, GameIdTeamPayload.class));
-                    case "submerge" ->
+                    case SUBMERGE ->
                             gameService.submerge(
                                     objectMapper.readValue(content, GameIdTeamPayload.class));
-                    default -> throw new NoSuchEventException(topic);
                 };
         session.sendMessage(new TextMessage(objectMapper.writeValueAsString(result)));
     }
@@ -105,5 +112,27 @@ public class GameWSHandler extends TextWebSocketHandler {
             throws Exception {
         sessions.remove(session.getId());
         super.afterConnectionClosed(session, status);
+    }
+
+    @Override
+    public Collection<WebSocketSession> getSessions(final Collection<Player> players) {
+        return players.stream()
+                .map(Player::id)
+                .map(playerToSessionId::get)
+                .filter(Objects::nonNull)
+                .map(sessions::get)
+                .filter(Objects::nonNull)
+                .toList();
+    }
+
+    @Override
+    public <T> void sendMessage(final WebSocketSession session, final GameEventMessage<T> event) {
+        try {
+            session.sendMessage(new TextMessage(objectMapper.writeValueAsString(event)));
+        } catch (final JsonProcessingException e) {
+            logger.error("Error while sending event", e);
+        } catch (final IOException e) {
+            logger.error("Error while sending event to the server", e);
+        }
     }
 }
