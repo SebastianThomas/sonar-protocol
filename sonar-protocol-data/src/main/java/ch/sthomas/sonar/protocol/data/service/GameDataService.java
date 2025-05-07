@@ -34,8 +34,8 @@ public class GameDataService {
             final GameRepository gameRepository,
             final PlayerRepository playerRepository,
             final TeamRepository teamRepository,
-            PathEntityRepository pathEntityRepository,
-            PathNodeEntityRepository pathNodeEntityRepository) {
+            final PathEntityRepository pathEntityRepository,
+            final PathNodeEntityRepository pathNodeEntityRepository) {
         this.gameRepository = gameRepository;
         this.playerRepository = playerRepository;
         this.teamRepository = teamRepository;
@@ -90,13 +90,17 @@ public class GameDataService {
     public Path move(final long gameId, final Team.ID teamId, final Direction direction)
             throws GameNotFoundException, GameException {
         final var lastPath = getLastPathEntity(gameId, teamId);
-        final var lastLocation = getLastLocation(lastPath);
-        final var newLocation = VectorUtils.add(lastLocation, direction.vector());
+        final var lastNode = getLastNode(lastPath);
+        if (!lastNode.switchActivated()) {
+            throw new PreviousRoundNotFinishedException();
+        }
+        final var newLocation = VectorUtils.add(lastNode.getLocation(), direction.vector());
         if (isOnPath(lastPath, newLocation)) {
             throw new CannotCrossOwnPathException(newLocation);
         }
         pathNodeEntityRepository.save(
-                new PathNodeEntity(lastPath.getId(), newLocation, Instant.now()));
+                PathNodeEntity.createFromExistingPath(
+                        lastPath.getId(), newLocation, Instant.now()));
         return pathEntityRepository.findById(lastPath.getId()).orElseThrow().toRecord();
     }
 
@@ -117,21 +121,21 @@ public class GameDataService {
         }
         return pathEntityRepository
                 .save(
-                        new PathEntity(
-                                lastPath.getShip(),
-                                new PathNodeEntity(getLastLocation(lastPath), Instant.now())))
+                        constructNewPathEntity(
+                                lastPath.getShip(), getLastNode(lastPath).getLocation()))
                 .toRecord();
     }
 
     public Path setStartPosition(final long gameId, final Team.ID teamId, final Location location)
             throws GameNotFoundException {
         final var gameAndTeam = findGameAndTeam(gameId, teamId);
-        final var newPath =
-                new PathEntity(
-                        gameAndTeam.getRight().getShip(),
-                        new PathNodeEntity(location, Instant.now()));
+        final var newPath = constructNewPathEntity(gameAndTeam.getRight().getShip(), location);
         pathEntityRepository.deleteByShip(gameAndTeam.getRight().getShip());
         return pathEntityRepository.save(newPath).toRecord();
+    }
+
+    private PathEntity constructNewPathEntity(final ShipEntity ship, final Location location) {
+        return new PathEntity(ship, PathNodeEntity.createNewPath(location, Instant.now()));
     }
 
     private PathEntity getLastPathEntity(final long gameId, final Team.ID teamId)
@@ -151,8 +155,8 @@ public class GameDataService {
         return lastPath;
     }
 
-    private Location getLastLocation(final PathEntity path) {
-        return path.getNodes().getLast().getLocation();
+    private PathNodeEntity getLastNode(final PathEntity path) {
+        return path.getNodes().getLast();
     }
 
     private boolean isOnPath(final PathEntity lastPath, final Location newLocation) {

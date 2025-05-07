@@ -18,32 +18,47 @@ public class PathNodeEntity {
     @Column(name = "fk_path_id", nullable = false)
     private long pathId;
 
-    @Column(name = "x")
+    @Column(name = "x", nullable = false)
     private int x;
 
-    @Column(name = "y")
+    @Column(name = "y", nullable = false)
     private int y;
 
-    @Column(name = "time")
+    @Column(name = "time", nullable = false)
     private Instant time;
+
+    @Column(name = "switch_activated", nullable = false)
+    private boolean switchActivated;
 
     public PathNodeEntity() {}
 
-    public PathNodeEntity(final Location point, final Instant time) {
-        this.x = point.y();
-        this.y = point.x();
-        this.time = time;
+    /** */
+    public static PathNodeEntity createNewPath(final Location point, final Instant time) {
+        final var newEntity = new PathNodeEntity();
+        newEntity.x = point.y();
+        newEntity.y = point.x();
+        newEntity.time = time;
+        newEntity.switchActivated = true;
+        return newEntity;
     }
 
-    public PathNodeEntity(final long pathId, final Location point, final Instant time) {
-        this.pathId = pathId;
-        this.x = point.y();
-        this.y = point.x();
-        this.time = time;
+    public static PathNodeEntity createFromExistingPath(
+            final long pathId, final Location point, final Instant time) {
+        final var newEntity = new PathNodeEntity();
+        newEntity.pathId = pathId;
+        newEntity.x = point.y();
+        newEntity.y = point.x();
+        newEntity.time = time;
+        newEntity.switchActivated = false;
+        return newEntity;
+    }
+
+    public boolean switchActivated() {
+        return switchActivated;
     }
 
     public PathNode toRecord() {
-        return new PathNode(id, getLocation(), time);
+        return new PathNode(id, getLocation(), time, switchActivated);
     }
 
     public Location getLocation() {
