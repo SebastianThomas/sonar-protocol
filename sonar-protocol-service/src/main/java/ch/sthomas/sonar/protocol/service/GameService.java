@@ -45,24 +45,27 @@ public class GameService {
         final var playerId = payload.playerId();
         final var gameId = payload.gameId();
         final var team = payload.team();
-        return listeners.sendMessage(
-                gameId,
-                GameEvent.JOIN,
+        final var game =
                 gameDataService.joinGame(
                         gameDataService
                                 .findPlayerById(playerId)
                                 .orElseThrow(PlayerNotFoundException::new),
                         gameId,
-                        team));
+                        team);
+        return listeners.sendMessage(team, GameEvent.JOIN, game);
     }
 
     public Game startGame(final long gameId) throws GameNotFoundException, GameException {
-        return listeners.sendMessage(gameId, GameEvent.START, gameDataService.startGame(gameId));
+        final var game = gameDataService.startGame(gameId);
+        return listeners.sendMessage(GameEvent.START, game);
     }
 
     public Path move(final MovePayload payload) throws GameNotFoundException, GameException {
         return listeners.sendMessage(
-                payload.gameId(),
+                gameDataService
+                        .findGameById(payload.gameId())
+                        .orElseThrow(GameNotFoundException::new),
+                payload.teamId(),
                 GameEvent.MOVE,
                 gameDataService.move(payload.gameId(), payload.teamId(), payload.direction()));
     }
@@ -70,7 +73,10 @@ public class GameService {
     public Path surface(final GameIdTeamPayload payload)
             throws GameException, GameNotFoundException {
         return listeners.sendMessage(
-                payload.gameId(),
+                gameDataService
+                        .findGameById(payload.gameId())
+                        .orElseThrow(GameNotFoundException::new),
+                payload.team(),
                 GameEvent.SURFACE,
                 gameDataService.surface(payload.gameId(), payload.team()));
     }
@@ -78,14 +84,20 @@ public class GameService {
     public Path submerge(final GameIdTeamPayload payload)
             throws GameException, GameNotFoundException {
         return listeners.sendMessage(
-                payload.gameId(),
+                gameDataService
+                        .findGameById(payload.gameId())
+                        .orElseThrow(GameNotFoundException::new),
+                payload.team(),
                 GameEvent.SUBMERGE,
                 gameDataService.submerge(payload.gameId(), payload.team()));
     }
 
     public Path setStartPosition(final SetLocationPayload payload) throws GameNotFoundException {
         return listeners.sendMessage(
-                payload.gameId(),
+                gameDataService
+                        .findGameById(payload.gameId())
+                        .orElseThrow(GameNotFoundException::new),
+                payload.team(),
                 GameEvent.SET_START_POSITION,
                 gameDataService.setStartPosition(
                         payload.gameId(), payload.team(), payload.location()));

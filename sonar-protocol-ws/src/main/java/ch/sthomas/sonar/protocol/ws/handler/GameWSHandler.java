@@ -4,7 +4,6 @@ import ch.sthomas.sonar.protocol.model.Player;
 import ch.sthomas.sonar.protocol.model.api.*;
 import ch.sthomas.sonar.protocol.model.event.GameEvent;
 import ch.sthomas.sonar.protocol.model.event.GameEventMessage;
-import ch.sthomas.sonar.protocol.model.event.WebSocketGameEventListener;
 import ch.sthomas.sonar.protocol.model.exception.GameException;
 import ch.sthomas.sonar.protocol.model.exception.GameNotFoundException;
 import ch.sthomas.sonar.protocol.model.exception.NoSuchEventException;
@@ -30,8 +29,7 @@ import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 
 @Component
-public class GameWSHandler extends TextWebSocketHandler
-        implements WebSocketGameEventListener<WebSocketSession> {
+public class GameWSHandler extends TextWebSocketHandler {
     private static final Logger logger = LoggerFactory.getLogger(GameWSHandler.class);
     private final ObjectMapper objectMapper;
     private final GameService gameService;
@@ -114,7 +112,6 @@ public class GameWSHandler extends TextWebSocketHandler
         super.afterConnectionClosed(session, status);
     }
 
-    @Override
     public Collection<WebSocketSession> getSessions(final Collection<Player> players) {
         return players.stream()
                 .map(Player::id)
@@ -125,7 +122,6 @@ public class GameWSHandler extends TextWebSocketHandler
                 .toList();
     }
 
-    @Override
     public <T> void sendMessage(final WebSocketSession session, final GameEventMessage<T> event) {
         try {
             session.sendMessage(new TextMessage(objectMapper.writeValueAsString(event)));
