@@ -20,7 +20,7 @@ public class TeamEntity {
 
     @ManyToOne private GameEntity game;
 
-    @OneToMany(fetch = FetchType.EAGER, mappedBy = "teamId")
+    @OneToMany(fetch = FetchType.EAGER, mappedBy = "team")
     private List<PlayerEntity> players;
 
     public TeamEntity() {}

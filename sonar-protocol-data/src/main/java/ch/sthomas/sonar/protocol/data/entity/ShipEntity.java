@@ -14,10 +14,17 @@ public class ShipEntity {
     @Column(name = "pk_ship_id", nullable = false)
     private Long id;
 
+    @Column(name = "health", nullable = false)
+    private int health;
+
     @OneToMany(mappedBy = "shipId")
     private List<PathEntity> paths;
 
     @OneToOne private TeamEntity team;
+
+    @OneToMany private List<SwitchEntity> switches;
+
+    @OneToMany private List<DefectEntity> defects;
 
     public ShipEntity() {}
 
@@ -26,7 +33,7 @@ public class ShipEntity {
     }
 
     public Ship toRecord() {
-        return new Ship(id, paths.stream().map(PathEntity::toRecord).toList());
+        return new Ship(id, health, paths.stream().map(PathEntity::toRecord).toList());
     }
 
     public List<PathEntity> getPaths() {

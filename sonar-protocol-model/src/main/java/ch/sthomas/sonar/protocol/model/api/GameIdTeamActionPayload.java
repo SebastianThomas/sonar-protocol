@@ -1,6 +1,7 @@
 package ch.sthomas.sonar.protocol.model.api;
 
 import ch.sthomas.sonar.protocol.model.Team;
+import ch.sthomas.sonar.protocol.model.action.Action;
 
-public record JoinGamePayload(long playerId, long gameId, Team.ID team)
+public record GameIdTeamActionPayload(long gameId, Team.ID team, Action action)
         implements GenericGameIdTeamPayload {}

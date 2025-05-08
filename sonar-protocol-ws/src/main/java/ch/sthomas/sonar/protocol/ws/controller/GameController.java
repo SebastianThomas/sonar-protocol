@@ -1,11 +1,7 @@
 package ch.sthomas.sonar.protocol.ws.controller;
 
 import ch.sthomas.sonar.protocol.model.Game;
-import ch.sthomas.sonar.protocol.model.Player;
-import ch.sthomas.sonar.protocol.model.api.JoinGamePayload;
-import ch.sthomas.sonar.protocol.model.api.PlayerIdBody;
-import ch.sthomas.sonar.protocol.model.api.PlayerPayload;
-import ch.sthomas.sonar.protocol.model.exception.GameException;
+import ch.sthomas.sonar.protocol.model.api.PlayerIdPayload;
 import ch.sthomas.sonar.protocol.model.exception.GameNotFoundException;
 import ch.sthomas.sonar.protocol.model.exception.PlayerNotFoundException;
 import ch.sthomas.sonar.protocol.service.GameService;
@@ -23,27 +19,10 @@ public class GameController {
         this.gameService = gameService;
     }
 
-    @PostMapping("/player")
-    public Player createPlayer(@RequestBody final PlayerPayload playerPayload) {
-        return gameService.createPlayer(playerPayload, null);
-    }
-
     @PostMapping("")
-    public Game createGame(@RequestBody final PlayerIdBody playerIdBody)
+    public Game createGame(@RequestBody final PlayerIdPayload playerIdPayload)
             throws PlayerNotFoundException {
-        return gameService.createGame(playerIdBody.playerId());
-    }
-
-    @PostMapping("/start")
-    public Game startGame(@RequestParam final long gameId)
-            throws GameNotFoundException, GameException {
-        return gameService.startGame(gameId);
-    }
-
-    @PostMapping("/join")
-    public Game joinGame(@RequestBody final JoinGamePayload joinGamePayload)
-            throws PlayerNotFoundException, GameNotFoundException {
-        return gameService.joinGame(joinGamePayload);
+        return gameService.createGame(playerIdPayload.playerId());
     }
 
     @GetMapping("")

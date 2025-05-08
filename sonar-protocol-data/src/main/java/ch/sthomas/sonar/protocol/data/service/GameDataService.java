@@ -4,6 +4,7 @@ import ch.sthomas.sonar.protocol.data.entity.*;
 import ch.sthomas.sonar.protocol.data.repository.GameRepository;
 import ch.sthomas.sonar.protocol.data.repository.PlayerRepository;
 import ch.sthomas.sonar.protocol.model.*;
+import ch.sthomas.sonar.protocol.model.action.Mine;
 import ch.sthomas.sonar.protocol.model.exception.*;
 import ch.sthomas.sonar.protocol.model.play.Direction;
 import ch.sthomas.sonar.protocol.model.play.Location;
@@ -29,18 +30,24 @@ public class GameDataService {
     private final TeamRepository teamRepository;
     private final PathEntityRepository pathEntityRepository;
     private final PathNodeEntityRepository pathNodeEntityRepository;
+    private final MineRepository mineRepository;
+    private final ShipRepository shipRepository;
 
     public GameDataService(
             final GameRepository gameRepository,
             final PlayerRepository playerRepository,
             final TeamRepository teamRepository,
             final PathEntityRepository pathEntityRepository,
-            final PathNodeEntityRepository pathNodeEntityRepository) {
+            final PathNodeEntityRepository pathNodeEntityRepository,
+            final MineRepository mineRepository,
+            final ShipRepository shipRepository) {
         this.gameRepository = gameRepository;
         this.playerRepository = playerRepository;
         this.teamRepository = teamRepository;
         this.pathEntityRepository = pathEntityRepository;
         this.pathNodeEntityRepository = pathNodeEntityRepository;
+        this.mineRepository = mineRepository;
+        this.shipRepository = shipRepository;
     }
 
     public Optional<Game> findGameById(final long id) {
@@ -91,12 +98,15 @@ public class GameDataService {
             throws GameNotFoundException, GameException {
         final var lastPath = getLastPathEntity(gameId, teamId);
         final var lastNode = getLastNode(lastPath);
-        if (!lastNode.switchActivated()) {
+        if (!lastNode.isFinished()) {
             throw new PreviousRoundNotFinishedException();
         }
         final var newLocation = VectorUtils.add(lastNode.getLocation(), direction.vector());
         if (isOnPath(lastPath, newLocation)) {
             throw new CannotCrossOwnPathException(newLocation);
+        }
+        if (findMineEntity(gameId, teamId, newLocation).isPresent()) {
+            throw new CannotMoveIntoOwnMineException(newLocation);
         }
         pathNodeEntityRepository.save(
                 PathNodeEntity.createFromExistingPath(
@@ -177,13 +187,13 @@ public class GameDataService {
                                             case A -> game.a();
                                             case B -> game.b();
                                         }))
-                .orElseThrow(GameNotFoundException::new);
+                .orElseThrow(() -> new GameNotFoundException(gameId));
     }
 
     public Game startGame(final long gameId) throws GameException, GameNotFoundException {
         final var gameOpt = gameRepository.findById(gameId);
         if (gameOpt.isEmpty()) {
-            throw new GameNotFoundException();
+            throw new GameNotFoundException(gameId);
         }
         final var game = gameOpt.get();
         if (pathsNotEmpty(game)) {
@@ -209,5 +219,33 @@ public class GameDataService {
     public Optional<Player> updatePlayerWsSessionId(final long playerId, final String wsSessionId) {
         playerRepository.updatePlayerWsSessionId(playerId, wsSessionId);
         return playerRepository.findById(playerId).map(PlayerEntity::toRecord);
+    }
+
+    public Optional<Mine> findMine(final long gameId, final Team.ID team, final Location location) {
+        return (switch (team) {
+                    case A -> mineRepository.findByTeamA(gameId, location.x(), location.y());
+                    case B -> mineRepository.findByTeamB(gameId, location.x(), location.y());
+                })
+                .map(MineEntity::toRecord);
+    }
+
+    public Optional<MineEntity> findMineEntity(
+            final long gameId, final Team.ID team, final Location location) {
+        return (switch (team) {
+            case A -> mineRepository.findByTeamA(gameId, location.x(), location.y());
+            case B -> mineRepository.findByTeamB(gameId, location.x(), location.y());
+        });
+    }
+
+    public void deleteMine(final MineEntity mine) {
+        mineRepository.delete(mine);
+    }
+
+    public void addDamage(final Ship ship, final int damage) {
+        shipRepository.addDamage(ship.id(), damage);
+    }
+
+    public void finishGame(final Game game) {
+        gameRepository.setGameState(game.id(), GameState.STOPPED);
     }
 }

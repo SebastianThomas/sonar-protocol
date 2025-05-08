@@ -30,7 +30,8 @@ public class PathNodeEntity {
     @Column(name = "switch_activated", nullable = false)
     private boolean switchActivated;
 
-    public PathNodeEntity() {}
+    @Column(name = "defect_crossed", nullable = false)
+    private boolean defectCrossed;
 
     /** */
     public static PathNodeEntity createNewPath(final Location point, final Instant time) {
@@ -39,6 +40,7 @@ public class PathNodeEntity {
         newEntity.y = point.x();
         newEntity.time = time;
         newEntity.switchActivated = true;
+        newEntity.defectCrossed = true;
         return newEntity;
     }
 
@@ -50,18 +52,19 @@ public class PathNodeEntity {
         newEntity.y = point.x();
         newEntity.time = time;
         newEntity.switchActivated = false;
+        newEntity.defectCrossed = false;
         return newEntity;
     }
 
-    public boolean switchActivated() {
-        return switchActivated;
-    }
-
     public PathNode toRecord() {
-        return new PathNode(id, getLocation(), time, switchActivated);
+        return new PathNode(id, getLocation(), time, switchActivated, defectCrossed);
     }
 
     public Location getLocation() {
         return new Location(x, y);
+    }
+
+    public boolean isFinished() {
+        return switchActivated && defectCrossed;
     }
 }

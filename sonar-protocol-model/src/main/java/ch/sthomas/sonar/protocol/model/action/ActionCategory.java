@@ -4,5 +4,6 @@ public enum ActionCategory {
     ATTACK,
     INTELLIGENCE,
     SPECIAL,
+    ATOM,
     ;
 }

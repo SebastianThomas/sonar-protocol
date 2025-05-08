@@ -12,6 +12,25 @@ CREATE TABLE t_switch
     PRIMARY KEY (fk_ship_id, action)
 );
 
+CREATE TABLE t_defect
+(
+    fk_ship_id      INTEGER REFERENCES t_ships (pk_ship_id) NOT NULL,
+    x               INTEGER                                 NOT NULL,
+    y               INTEGER                                 NOT NULL,
+    direction       TEXT                                    NOT NULL,
+    action_category TEXT                                    NOT NULL,
+    critical        BOOLEAN                                 NOT NULL DEFAULT false,
+    PRIMARY KEY (fk_ship_id, x, y, direction)
+);
+
+CREATE TABLE t_unexploded_mines
+(
+    fk_ship_id INTEGER REFERENCES t_ships (pk_ship_id) NOT NULL,
+    x          INTEGER                                 NOT NULL,
+    y          INTEGER                                 NOT NULL,
+    PRIMARY KEY (fk_ship_id, x, y)
+);
+
 CREATE TABLE t_teams
 (
     pk_team_id INTEGER GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
@@ -49,5 +68,6 @@ CREATE TABLE t_path_nodes
     x                INTEGER                                 NOT NULL,
     y                INTEGER                                 NOT NULL,
     time             TIMESTAMPTZ                             NOT NULL,
-    switch_activated BOOLEAN                                 NOT NULL DEFAULT FALSE
+    switch_activated BOOLEAN                                 NOT NULL DEFAULT FALSE,
+    defect_crossed   BOOLEAN                                 NOT NULL DEFAULT FALSE
 );

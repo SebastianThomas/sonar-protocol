@@ -11,14 +11,23 @@ import java.util.Collection;
 import java.util.Optional;
 
 public enum GameEvent {
+    // Game
     CREATE_PLAYER(NONE),
     REJOIN_GAME(GAME),
     JOIN(GAME),
     SET_START_POSITION(TEAM),
+
+    // Captain
     START(GAME),
     MOVE(GAME),
     SURFACE(GAME),
     SUBMERGE(GAME),
+
+    SWITCH(TEAM),
+
+    // Actions
+    ACTION(TEAM),
+    EXPLODE_MINE(GAME),
     ;
 
     private final GameEventNotificationPolicy notificationPolicy;

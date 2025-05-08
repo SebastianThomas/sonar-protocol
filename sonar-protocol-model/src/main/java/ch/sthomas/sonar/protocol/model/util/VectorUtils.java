@@ -32,4 +32,9 @@ public class VectorUtils {
     static Location addUnsafe(final Location a, final XYAccessor b) {
         return new Location(a.x() + b.x(), a.y() + b.y());
     }
+
+    public static int distance(final Location shipLocation, final Location location) {
+        return Math.abs(shipLocation.x() - location.x())
+                + Math.abs(shipLocation.y() - location.y());
+    }
 }
