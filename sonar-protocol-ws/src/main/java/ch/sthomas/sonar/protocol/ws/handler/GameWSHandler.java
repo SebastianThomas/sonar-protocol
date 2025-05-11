@@ -19,6 +19,7 @@ import org.springframework.web.socket.WebSocketSession;
 import org.springframework.web.socket.handler.TextWebSocketHandler;
 
 import java.io.IOException;
+import java.text.MessageFormat;
 
 @Component
 public class GameWSHandler extends TextWebSocketHandler {
@@ -47,8 +48,8 @@ public class GameWSHandler extends TextWebSocketHandler {
             @NotNull @org.springframework.lang.NonNull final WebSocketSession session,
             final TextMessage message)
             throws IOException {
+        final var payload = message.getPayload();
         try {
-            final var payload = message.getPayload();
             final var topicAndContent = readBracketsAndPayload(payload);
             final var topic = GameEvent.fromString(topicAndContent.getKey());
             final var content = topicAndContent.getValue();
@@ -56,6 +57,10 @@ public class GameWSHandler extends TextWebSocketHandler {
             session.sendMessage(new TextMessage(objectMapper.writeValueAsString(result)));
         } catch (final GameException | GameRuntimeException e) {
             session.sendMessage(new TextMessage(e.getMessage()));
+        } catch (final JsonProcessingException e) {
+            session.sendMessage(
+                    new TextMessage(
+                            MessageFormat.format("Message cannot be parsed: {0}", payload)));
         }
     }
 
@@ -95,6 +100,9 @@ public class GameWSHandler extends TextWebSocketHandler {
                     gameService.moveSwitch(
                             objectMapper.readValue(content, GameIdTeamActionPayload.class));
             case ACTION -> readPerformActionPayload(content);
+            case ANSWER_SONAR ->
+                    gameService.answerSonar(
+                            objectMapper.readValue(payload, GameIdTeamSonarAnswerPayload.class));
             case EXPLODE_MINE ->
                     gameService.explodeMine(
                             objectMapper.readValue(content, GameIdTeamLocationPayload.class));
@@ -131,20 +139,20 @@ public class GameWSHandler extends TextWebSocketHandler {
     }
 
     private Record readPerformActionPayload(final String content)
-            throws NoSuchEventException, JsonProcessingException {
+            throws GameException, JsonProcessingException {
         final var actionAndPayload = readBracketsAndPayload(content);
         final var action = Action.fromString(actionAndPayload.getKey());
         final var payload = actionAndPayload.getValue();
-        // TODO: Listeners
         return switch (action) {
             case MINE ->
                     gameService.placeMine(
                             objectMapper.readValue(payload, GameIdTeamLocationPayload.class));
-            case DRONE ->
-                    gameService.torpedo(
-                            objectMapper.readValue(payload, GameIdTeamSectorPayload.class));
             case TORPEDO ->
-                    gameService.torpedo(objectMapper.readValue(payload, GameIdTeamPayload.class));
+                    gameService.torpedo(
+                            objectMapper.readValue(payload, GameIdTeamLocationPayload.class));
+            case DRONE ->
+                    gameService.drone(
+                            objectMapper.readValue(payload, GameIdTeamSectorPayload.class));
             case SONAR ->
                     gameService.sonar(objectMapper.readValue(payload, GameIdTeamPayload.class));
             case STEALTH ->

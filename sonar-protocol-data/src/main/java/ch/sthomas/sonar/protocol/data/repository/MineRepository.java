@@ -1,4 +1,4 @@
-package ch.sthomas.sonar.protocol.data.service;
+package ch.sthomas.sonar.protocol.data.repository;
 
 import ch.sthomas.sonar.protocol.data.entity.MineEntity;
 import ch.sthomas.sonar.protocol.data.entity.id.MineEntityId;

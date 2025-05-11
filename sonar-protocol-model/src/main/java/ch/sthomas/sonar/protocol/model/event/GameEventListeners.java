@@ -1,8 +1,13 @@
 package ch.sthomas.sonar.protocol.model.event;
 
+import static ch.sthomas.sonar.protocol.model.event.GameEvent.ACTION;
+import static ch.sthomas.sonar.protocol.model.event.GameEventNotificationPolicy.TEAM;
+
 import ch.sthomas.sonar.protocol.model.Game;
 import ch.sthomas.sonar.protocol.model.Player;
 import ch.sthomas.sonar.protocol.model.Team;
+import ch.sthomas.sonar.protocol.model.action.Action;
+import ch.sthomas.sonar.protocol.model.api.PerformedActionData;
 
 import java.util.Collection;
 import java.util.List;
@@ -31,6 +36,24 @@ public record GameEventListeners(Collection<GameEventListener> listeners) {
         return data;
     }
 
+    public <T, R> R sendMessage(
+            final Game game,
+            final Team.ID team,
+            final Action action,
+            final T data,
+            final R dataTeam) {
+        final var playersThis = getPlayers(game, team, TEAM);
+        final var playersOther = getPlayers(game, team.other(), TEAM);
+        final var message =
+                ACTION.createMessage(
+                        game.id(),
+                        playersThis,
+                        playersOther,
+                        new PerformedActionData<>(action, data, dataTeam));
+        listeners.forEach(l -> message.forEach(l::pushEvent));
+        return dataTeam;
+    }
+
     private Collection<Player> getPlayers(
             final Game game, final GameEventNotificationPolicy policy) {
         return switch (policy) {
@@ -41,6 +64,9 @@ public record GameEventListeners(Collection<GameEventListener> listeners) {
             case TEAM ->
                     throw new IllegalArgumentException(
                             "Cannot send message to team without knowing team.");
+            case FROM_ACTION ->
+                    throw new UnsupportedOperationException(
+                            "Cannot send message to action without knowing action.");
         };
     }
 
@@ -56,6 +82,9 @@ public record GameEventListeners(Collection<GameEventListener> listeners) {
                         case A -> game.a().players();
                         case B -> game.b().players();
                     };
+            case FROM_ACTION ->
+                    throw new UnsupportedOperationException(
+                            "Cannot get players for action without knowing action.");
         };
     }
 }

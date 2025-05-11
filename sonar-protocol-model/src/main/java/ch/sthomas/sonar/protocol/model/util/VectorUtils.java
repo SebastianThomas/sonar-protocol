@@ -4,6 +4,8 @@ import ch.sthomas.sonar.protocol.model.exception.OutOfBoundsException;
 import ch.sthomas.sonar.protocol.model.play.Location;
 import ch.sthomas.sonar.protocol.model.play.XYAccessor;
 
+import jakarta.validation.constraints.PositiveOrZero;
+
 public class VectorUtils {
     public static final int MIN_X = 0;
     public static final int MAX_X = 14;
@@ -15,7 +17,16 @@ public class VectorUtils {
     private VectorUtils() {}
 
     public static Location add(final Location a, final XYAccessor b) throws OutOfBoundsException {
-        final var newLocation = addUnsafe(a, b);
+        final var newLocation = addUnsafe(a, b, 1);
+        if (isInBounds(newLocation)) {
+            return newLocation;
+        }
+        throw new OutOfBoundsException(newLocation);
+    }
+
+    public static Location add(final Location a, final XYAccessor b, final int bMultiplier)
+            throws OutOfBoundsException {
+        final var newLocation = addUnsafe(a, b, bMultiplier);
         if (isInBounds(newLocation)) {
             return newLocation;
         }
@@ -29,11 +40,12 @@ public class VectorUtils {
                 && location.y() <= MAX.y();
     }
 
-    static Location addUnsafe(final Location a, final XYAccessor b) {
-        return new Location(a.x() + b.x(), a.y() + b.y());
+    static Location addUnsafe(final Location a, final XYAccessor b, final int bMultiplier) {
+        return new Location(a.x() + bMultiplier * b.x(), a.y() + bMultiplier * b.y());
     }
 
-    public static int distance(final Location shipLocation, final Location location) {
+    public static @PositiveOrZero int distance(
+            final Location shipLocation, final Location location) {
         return Math.abs(shipLocation.x() - location.x())
                 + Math.abs(shipLocation.y() - location.y());
     }

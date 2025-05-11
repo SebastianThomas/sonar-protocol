@@ -32,4 +32,12 @@ public enum Sector {
     public static Sector fromValue(final int value) {
         return VALUES.get(value);
     }
+
+    public boolean contains(final Location location) {
+        return this == fromLocation(location);
+    }
+
+    public static Sector fromLocation(final Location location) {
+        return fromValue(location.x() / 5 + 1 + 3 * (location.y() / 5));
+    }
 }

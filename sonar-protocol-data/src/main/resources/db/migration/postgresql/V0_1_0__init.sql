@@ -71,3 +71,15 @@ CREATE TABLE t_path_nodes
     switch_activated BOOLEAN                                 NOT NULL DEFAULT FALSE,
     defect_crossed   BOOLEAN                                 NOT NULL DEFAULT FALSE
 );
+
+CREATE TABLE t_game_events
+(
+    pk_game_event_id    INTEGER GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    fk_game_id          INTEGER REFERENCES t_games (pk_game_id)     NOT NULL,
+    fk_player_id        INTEGER REFERENCES t_players (pk_player_id) NOT NULL,
+    event               TEXT                                        NOT NULL,
+    notification_policy TEXT                                        NOT NULL,
+    clazz               TEXT                                        NOT NULL,
+    time                TIMESTAMPTZ                                 NOT NULL,
+    data                JSONB                                       NOT NULL
+);

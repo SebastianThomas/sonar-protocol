@@ -44,6 +44,18 @@ public class PathNodeEntity {
         return newEntity;
     }
 
+    public static PathNodeEntity createFromExistingPathFinished(
+            final long pathId, final Location point, final Instant time, final boolean finished) {
+        final var newEntity = new PathNodeEntity();
+        newEntity.pathId = pathId;
+        newEntity.x = point.y();
+        newEntity.y = point.x();
+        newEntity.time = time;
+        newEntity.switchActivated = finished;
+        newEntity.defectCrossed = finished;
+        return newEntity;
+    }
+
     public static PathNodeEntity createFromExistingPath(
             final long pathId, final Location point, final Instant time) {
         final var newEntity = new PathNodeEntity();
@@ -62,9 +74,5 @@ public class PathNodeEntity {
 
     public Location getLocation() {
         return new Location(x, y);
-    }
-
-    public boolean isFinished() {
-        return switchActivated && defectCrossed;
     }
 }

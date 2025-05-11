@@ -32,6 +32,10 @@ public class PlayerEntity {
 
     public PlayerEntity() {}
 
+    public PlayerEntity(final Player player) {
+        this(player.name(), player.role(), player.wsSessionId());
+    }
+
     public PlayerEntity(final String name, final PlayerRole role, final String wsSessionId) {
         this.name = name;
         this.role = role;

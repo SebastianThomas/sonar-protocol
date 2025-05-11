@@ -4,5 +4,5 @@ public enum GameEventNotificationPolicy {
     NONE,
     TEAM,
     GAME,
-    ;
+    FROM_ACTION;
 }
