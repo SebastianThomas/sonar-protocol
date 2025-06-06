@@ -33,7 +33,11 @@ public class ShipEntity {
     }
 
     public Ship toRecord() {
-        return new Ship(id, health, paths.stream().map(PathEntity::toRecord).toList());
+        return new Ship(
+                id,
+                health,
+                defects.stream().map(DefectEntity::toRecord).toList(),
+                paths.stream().map(PathEntity::toRecord).toList());
     }
 
     public List<PathEntity> getPaths() {
@@ -42,5 +46,9 @@ public class ShipEntity {
 
     public long getId() {
         return id;
+    }
+
+    public List<DefectEntity> getDefects() {
+        return defects;
     }
 }

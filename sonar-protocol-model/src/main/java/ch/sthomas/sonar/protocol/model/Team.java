@@ -1,5 +1,7 @@
 package ch.sthomas.sonar.protocol.model;
 
+import ch.sthomas.sonar.protocol.model.play.Direction;
+
 import java.util.List;
 
 public record Team(long id, List<Player> players, Ship ship) {
@@ -20,5 +22,15 @@ public record Team(long id, List<Player> players, Ship ship) {
                 case B -> game.b();
             };
         }
+    }
+
+    public Direction getLastDirection() {
+        final var nodes = ship.paths().getLast().nodes();
+        if (nodes.size() < 2) {
+            throw new
+        }
+        final var lastLocation = nodes.getLast();
+        final var previousLocation = .
+        if (lastLocation == null) {}
     }
 }

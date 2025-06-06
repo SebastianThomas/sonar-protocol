@@ -4,6 +4,7 @@ import ch.sthomas.sonar.protocol.data.entity.id.DefectEntityId;
 import ch.sthomas.sonar.protocol.model.action.ActionCategory;
 import ch.sthomas.sonar.protocol.model.action.Defect;
 import ch.sthomas.sonar.protocol.model.play.DefectLocation;
+import ch.sthomas.sonar.protocol.model.play.Direction;
 
 import jakarta.persistence.*;
 
@@ -24,7 +25,22 @@ public class DefectEntity {
     private boolean critical;
 
     public Defect toRecord() {
-        return new Defect(
-                new DefectLocation(id.x(), id.y()), actionCategory, id.direction(), critical);
+        return new Defect(getLocation(), actionCategory, getDirection(), critical);
+    }
+
+    public boolean getCritical() {
+        return critical;
+    }
+
+    public void setCritical(final boolean critical) {
+        this.critical = critical;
+    }
+
+    public Direction getDirection() {
+        return id.direction();
+    }
+
+    public DefectLocation getLocation() {
+        return new DefectLocation(id.x(), id.y());
     }
 }

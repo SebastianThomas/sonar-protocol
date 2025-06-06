@@ -115,7 +115,7 @@ public class GameService {
             throw new PreviousRoundNotFinishedException();
         }
         final var path = gameDataService.setSurfaced(lastPath.id());
-        // TODO: Remove Defects
+        gameDataService.clearDefects(ship);
         return listeners.sendMessage(
                 gameDataService
                         .findGameById(payload.gameId())
@@ -312,10 +312,36 @@ public class GameService {
 
     public DefectInfo crossDefect(final GameIdTeamDefectPayload payload) {
         final var game = findGame(payload.gameId());
-        // TODO: Cross Defect
-        // TODO: Check Defect Circuits
+        final var team =
+                switch (payload.team()) {
+                    case A -> game.a();
+                    case B -> game.b();
+                };
+        // TODO: Check Defect for this move not yet crossed
+        if (payload.direction() != team.getLastDirection()) {
+            throw new Exception();
+        }
+        final var defects =
+                gameDataService.crossDefect(
+                        payload.gameId(),
+                        payload.team(),
+                        payload.direction(),
+                        payload.defectLocation());
+        DefectCircuit.EXISTING_CIRCUITS.stream()
+                .filter(
+                        circuit ->
+                                circuit.defects().stream()
+                                        .allMatch(
+                                                circuitObj ->
+                                                        defects.stream()
+                                                                .anyMatch(circuitObj::equals)))
+                .forEach(c -> gameDataService.clearDefects(team.ship(), c));
         return listeners.sendMessage(
-                game, payload.team(), GameEvent.CROSS_DEFECT, new DefectInfo(List.of()));
+                game,
+                payload.team(),
+                GameEvent.CROSS_DEFECT,
+                new DefectInfo(
+                        gameDataService.findTeamShip(payload.gameId(), payload.team()).defects()));
     }
 
     private GameOverInfo calculateDamage(final long gameId, final Location location)

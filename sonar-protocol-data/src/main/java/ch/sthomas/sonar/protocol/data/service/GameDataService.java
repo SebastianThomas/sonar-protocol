@@ -3,8 +3,12 @@ package ch.sthomas.sonar.protocol.data.service;
 import ch.sthomas.sonar.protocol.data.entity.*;
 import ch.sthomas.sonar.protocol.data.repository.*;
 import ch.sthomas.sonar.protocol.model.*;
+import ch.sthomas.sonar.protocol.model.action.Defect;
+import ch.sthomas.sonar.protocol.model.action.DefectCircuit;
 import ch.sthomas.sonar.protocol.model.action.Mine;
 import ch.sthomas.sonar.protocol.model.exception.*;
+import ch.sthomas.sonar.protocol.model.play.DefectLocation;
+import ch.sthomas.sonar.protocol.model.play.Direction;
 import ch.sthomas.sonar.protocol.model.play.Location;
 
 import com.nimbusds.jose.util.Pair;
@@ -200,7 +204,6 @@ public class GameDataService {
     public Path savePathNode(final long pathId, final Location newLocation, final Instant time) {
         pathNodeEntityRepository.save(
                 PathNodeEntity.createFromExistingPath(pathId, newLocation, time));
-
         return pathEntityRepository.findById(pathId).orElseThrow().toRecord();
     }
 
@@ -216,5 +219,42 @@ public class GameDataService {
                                         time,
                                         newLocation.equals(targetLocation))));
         return pathEntityRepository.findById(pathId).orElseThrow().toRecord();
+    }
+
+    public void clearDefects(final Ship ship) {
+        final var shipEntity = shipRepository.findById(ship.id()).orElseThrow();
+        shipEntity.getDefects().forEach(defect -> defect.setCritical(false));
+        shipRepository.save(shipEntity);
+    }
+
+    public void clearDefects(final Ship ship, final DefectCircuit circuit) {
+        final var shipEntity = shipRepository.findById(ship.id()).orElseThrow();
+        shipEntity.getDefects().stream()
+                .filter(c -> circuit.defects().stream().anyMatch(c.toRecord()::equals))
+                .forEach(defect -> defect.setCritical(false));
+        shipRepository.save(shipEntity);
+    }
+
+    public List<Defect> crossDefect(
+            final long gameId,
+            final Team.ID team,
+            final Direction direction,
+            final DefectLocation defectLocation) {
+        final var ship =
+                switch (team) {
+                    case A -> shipRepository.findByGameIdAndTeamA(gameId);
+                    case B -> shipRepository.findByGameIdAndTeamB(gameId);
+                };
+        ship.getDefects().stream()
+                .filter(
+                        d ->
+                                d.getDirection() == direction
+                                        && d.getLocation() == defectLocation
+                                        && !d.getCritical())
+                .findFirst()
+                .orElseThrow(() -> new NoSuchAvailableDefectException(direction, defectLocation))
+                .setCritical(true);
+        shipRepository.save(ship);
+        return ship.getDefects().stream().map(DefectEntity::toRecord).toList();
     }
 }
