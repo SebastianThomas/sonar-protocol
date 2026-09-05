@@ -16,6 +16,7 @@ spec:
         metadata:
             labels:
                 app: sonar-protocol-ws-dev
+                app.kubernetes.io/name: sonar-protocol-ws-dev
                 egress: cilium
             annotations:
                 prometheus.io/scrape: "true"
