@@ -1,6 +1,6 @@
 services:
   shared-db:
-    image: postgres:17
+    image: postgres:19
     platform: linux/amd64
     environment:
       POSTGRES_PASSWORD: sonar-protocol
